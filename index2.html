@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Voice Explanation - Multilingual with Image Support</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #10b981;
+            --accent: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1f2937;
+            --light: #f8fafc;
+            --gray: #6b7280;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--dark);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" fill="%23ffffff10"><polygon points="0,100 1000,0 1000,100"/></svg>');
+            background-size: cover;
+        }
+
+        .header h1 {
+            font-size: 2.8rem;
+            margin-bottom: 15px;
+            font-weight: 700;
+            position: relative;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            position: relative;
+            font-weight: 300;
+        }
+
+        .api-status {
+            background: linear-gradient(135deg, #d4f7e2, #10b981);
+            color: #065f46;
+            padding: 15px;
+            text-align: center;
+            font-weight: 600;
+            border-bottom: 1px solid #10b981;
+        }
+
+        .content {
+            padding: 35px;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+            padding: 20px;
+            border-radius: 15px;
+            border-left: 5px solid var(--primary);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+
+        .feature-card h3 {
+            color: var(--primary-dark);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .question-section {
+            background: var(--light);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 2px dashed #e5e7eb;
+            transition: all 0.3s ease;
+        }
+
+        .question-section:hover {
+            border-color: var(--primary);
+            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.1);
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .question-input {
+            width: 100%;
+            padding: 18px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 16px;
+            resize: vertical;
+            min-height: 120px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .question-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .upload-section {
+            border: 2px dashed #d1d5db;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            margin: 20px 0;
+            background: #fafafa;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-section:hover {
+            border-color: var(--primary);
+            background: #f0f9ff;
+        }
+
+        .upload-section.dragover {
+            border-color: var(--primary);
+            background: #e0f2fe;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+
+        .upload-text {
+            color: var(--gray);
+            margin-bottom: 15px;
+        }
+
+        #imagePreview {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 10px;
+            margin-top: 15px;
+            display: none;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .language-buttons {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .lang-btn {
+            padding: 12px 24px;
+            border: 2px solid var(--primary);
+            background: white;
+            color: var(--primary);
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .lang-btn.active {
+            background: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .lang-btn:hover:not(.active) {
+            background: #f0f9ff;
+            transform: translateY(-1px);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, var(--secondary), #059669);
+            color: white;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--gray);
+            color: var(--gray);
+        }
+
+        .btn-outline:hover:not(:disabled) {
+            border-color: var(--primary);
+            color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .explanation-section {
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 25px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .explanation-section h3 {
+            color: var(--dark);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.4rem;
+        }
+
+        .explanation-text {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            border-left: 5px solid var(--primary);
+            margin-bottom: 25px;
+            min-height: 150px;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            font-size: 16px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            font-family: 'Segoe UI', 'Nirmala UI', 'Arial', sans-serif;
+        }
+
+        .hindi-text {
+            font-family: 'Nirmala UI', 'Mangal', 'Arial', sans-serif;
+            font-size: 17px;
+            line-height: 1.8;
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, #fee2e2, #fecaca);
+            color: #dc2626;
+            padding: 18px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: none;
+            border-left: 5px solid var(--danger);
+            font-weight: 600;
+        }
+
+        .success-message {
+            background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+            color: #065f46;
+            padding: 18px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: none;
+            border-left: 5px solid var(--secondary);
+            font-weight: 600;
+        }
+
+        .voice-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .voice-btn {
+            padding: 12px 24px;
+            border: 2px solid var(--primary);
+            background: white;
+            color: var(--primary);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .voice-btn:hover:not(:disabled) {
+            background: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(99, 102, 241, 0.2);
+        }
+
+        .voice-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .settings-panel {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            border: 2px solid #e5e7eb;
+            margin-top: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        .setting-group {
+            margin-bottom: 25px;
+        }
+
+        .setting-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: var(--dark);
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        select, input[type="range"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-family: inherit;
+            background: white;
+            transition: all 0.3s ease;
+        }
+
+        select:focus, input[type="range"]:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .range-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: var(--gray);
+            margin-top: 8px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            background: white;
+            border-radius: 15px;
+            margin: 25px 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading p {
+            color: var(--dark);
+            font-size: 18px;
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .api-info {
+            background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+            border: 2px solid var(--primary);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .api-info p {
+            margin: 8px 0;
+            color: var(--dark);
+            font-weight: 500;
+        }
+
+        .api-status-badge {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+            margin-left: 10px;
+        }
+
+        .model-selector {
+            margin-top: 12px;
+        }
+
+        .model-selector select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            background: white;
+        }
+
+        .hindi-example {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            border: 2px solid var(--accent);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            font-family: 'Nirmala UI', 'Mangal', sans-serif;
+        }
+
+        .hindi-example h4 {
+            color: #92400e;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+            
+            .header {
+                padding: 30px 20px;
+            }
+            
+            .header h1 {
+                font-size: 2.2rem;
+            }
+            
+            .content {
+                padding: 25px;
+            }
+            
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .voice-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .voice-btn {
+                justify-content: center;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .language-buttons {
+                justify-content: center;
+            }
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-dark);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-btn {
+            background: linear-gradient(135deg, var(--accent), #f59e0b);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(245, 158, 11, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-robot"></i> AI Voice Explanation</h1>
+            <p>Multilingual AI Assistant with Image & Voice Support</p>
+        </div>
+
+        <div class="api-status">
+            <i class="fas fa-plug"></i> Connected to Groq API - हिंदी और अंग्रेजी में उत्तर उपलब्ध!
+        </div>
+
+        <div class="content">
+            <!-- Feature Grid -->
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h3><i class="fas fa-language"></i> Multilingual Support</h3>
+                    <p>Get explanations in English, Hindi, Spanish, and French with native voice synthesis</p>
+                </div>
+                <div class="feature-card">
+                    <h3><i class="fas fa-image"></i> Image Question Support</h3>
+                    <p>Upload images containing questions and get AI-powered explanations</p>
+                </div>
+            </div>
+
+            <!-- API Info -->
+            <div class="api-info">
+                <p><strong><i class="fas fa-key"></i> Groq API Active</strong> <span class="api-status-badge">ULTRA FAST</span></p>
+                <p>Choose AI Model:</p>
+                <div class="model-selector">
+                    <select id="modelSelect">
+                        <option value="llama-3.1-8b-instant">Llama 3.1 8B Instant (Fastest)</option>
+                        <option value="llama-3.1-70b-versatile">Llama 3.1 70B Versatile (High Quality)</option>
+                        <option value="mixtral-8x7b-32768">Mixtral 8x7B (Expert Quality)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Hindi Examples -->
+            <div class="hindi-example">
+                <h4><i class="fas fa-star"></i> हिंदी में प्रश्न पूछें - Examples:</h4>
+                <p>• प्रकाश संश्लेषण क्या है? समझाइए</p>
+                <p>• ब्लॉकचेन टेक्नोलॉजी कैसे काम करती है?</p>
+                <p>• क्वांटम कंप्यूटिंग को सरल भाषा में समझाइए</p>
+                <p>• आर्टिफिशियल इंटेलिजेंस क्या है?</p>
+            </div>
+
+            <!-- Question Input Section -->
+            <div class="question-section">
+                <div class="input-group">
+                    <textarea 
+                        class="question-input" 
+                        placeholder="Type your question here or upload an image... 🌟
+                        
+English Examples:
+• Explain photosynthesis in simple terms
+• How does blockchain technology work?
+• What is quantum computing?
+
+हिंदी उदाहरण:
+• प्रकाश संश्लेषण क्या है? समझाइए
+• ब्लॉकचेन टेक्नोलॉजी कैसे काम करती है?
+• क्वांटम कंप्यूटिंग को सरल भाषा में समझाइए"
+                        id="questionInput"
+                    >प्रकाश संश्लेषण क्या है? समझाइए</textarea>
+                </div>
+
+                <!-- Image Upload Section -->
+                <div class="upload-section" id="uploadSection">
+                    <div class="upload-icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <div class="upload-text">
+                        <h4>Upload Question Image</h4>
+                        <p>Drag & drop an image or click to browse</p>
+                        <p class="small">Supports JPG, PNG, GIF (Max 5MB)</p>
+                    </div>
+                    <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                        <i class="fas fa-folder-open"></i> Choose Image
+                    </button>
+                    <input type="file" id="fileInput" class="file-input" accept="image/*">
+                    <img id="imagePreview" alt="Image Preview">
+                </div>
+                
+                <div class="language-buttons">
+                    <button class="lang-btn active" data-lang="en">
+                        <i class="fas fa-flag-usa"></i> English
+                    </button>
+                    <button class="lang-btn" data-lang="hi">
+                        <i class="fas fa-flag"></i> हिंदी
+                    </button>
+                    <button class="lang-btn" data-lang="es">
+                        <i class="fas fa-flag"></i> Spanish
+                    </button>
+                    <button class="lang-btn" data-lang="fr">
+                        <i class="fas fa-flag"></i> French
+                    </button>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="btn btn-primary" id="getExplanationBtn">
+                        <i class="fas fa-brain"></i> Get AI Explanation
+                    </button>
+                    <button class="btn btn-secondary" id="clearBtn">
+                        <i class="fas fa-broom"></i> Clear All
+                    </button>
+                </div>
+            </div>
+
+            <!-- Messages -->
+            <div class="error-message" id="errorMessage"></div>
+            <div class="success-message" id="successMessage"></div>
+
+            <!-- Loading Indicator -->
+            <div class="loading" id="loadingIndicator">
+                <div class="spinner"></div>
+                <p>AI is analyzing your question...</p>
+                <p style="font-size: 14px; color: #6c757d; margin-top: 10px;">This will be very fast! <i class="fas fa-bolt"></i></p>
+            </div>
+
+            <!-- Explanation Section -->
+            <div class="explanation-section">
+                <h3><i class="fas fa-robot"></i> AI Explanation</h3>
+                <div class="explanation-text" id="explanationText">
+                    Enter your question above or upload an image, then click "Get AI Explanation" to generate a detailed, easy-to-understand explanation in your chosen language.
+                </div>
+
+                <!-- Voice Controls -->
+                <div class="voice-controls">
+                    <button class="btn btn-primary" id="generateVoiceBtn">
+                        <i class="fas fa-volume-up"></i> Generate Voice
+                    </button>
+                    <button class="voice-btn" id="speakBtn" disabled>
+                        <i class="fas fa-play"></i> Speak
+                    </button>
+                    <button class="voice-btn" id="pauseBtn" disabled>
+                        <i class="fas fa-pause"></i> Pause
+                    </button>
+                    <button class="voice-btn" id="stopBtn" disabled>
+                        <i class="fas fa-stop"></i> Stop
+                    </button>
+                </div>
+
+                <!-- Voice Settings -->
+                <div class="settings-panel">
+                    <div class="setting-group">
+                        <label for="voiceSelect"><i class="fas fa-microphone"></i> Voice Selection</label>
+                        <select id="voiceSelect">
+                            <option value="auto">Auto-detect (Recommended)</option>
+                            <option value="Google हिन्दी">Google Hindi (हिंदी)</option>
+                            <option value="Google UK English Male">Google UK English Male</option>
+                            <option value="Google US English">Google US English</option>
+                        </select>
+                    </div>
+                    
+                    <div class="setting-group">
+                        <label for="speedRange">
+                            <i class="fas fa-tachometer-alt"></i> Speech Speed: <span id="speedValue">Normal</span>
+                        </label>
+                        <input type="range" id="speedRange" min="0.5" max="2" step="0.1" value="1">
+                        <div class="range-labels">
+                            <span>Slow</span>
+                            <span>Normal</span>
+                            <span>Fast</span>
+                        </div>
+                    </div>
+                    
+                    <div class="setting-group">
+                        <label for="pitchRange">
+                            <i class="fas fa-music"></i> Voice Pitch: <span id="pitchValue">Normal</span>
+                        </label>
+                        <input type="range" id="pitchRange" min="0.5" max="2" step="0.1" value="1">
+                        <div class="range-labels">
+                            <span>Low</span>
+                            <span>Normal</span>
+                            <span>High</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Connect JavaScript File -->
+    <script src="script.js"></script>
+</body>
+</html>
